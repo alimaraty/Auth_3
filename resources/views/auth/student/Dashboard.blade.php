@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم</title>
-    <!-- استيراد Bootstrap من خلال CDN -->
+    <title>لوحة تحكم الطالب</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         body {
             background: linear-gradient(135deg, #2E7D32, #A5D6A7);
@@ -100,6 +100,33 @@
             font-size: 2.5rem;
             font-weight: bold;
         }
+
+        .course-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .course-card:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .btn-register {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-register:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
 </head>
@@ -108,13 +135,12 @@
     <div class="container-fluid">
         <div class="row">
             <!-- الشريط الجانبي -->
-
             <nav class="col-md-2 sidebar">
                 <h4 class="text-center">لوحة التحكم</h4>
                 <a href="#"><i class="bi bi-house"></i> الرئيسية</a>
-                <a href="#"><i class="bi bi-bar-chart"></i> التقارير</a>
-                <a href="#"><i class="bi bi-gear"></i> الإعدادات</a>
-                <a href="#"><i class="bi bi-people"></i> المستخدمين</a>
+                <a href="#"><i class="bi bi-book"></i> المواد الدراسية</a>
+                <a href="#"><i class="bi bi-calendar"></i> الجدول الدراسي</a>
+                <a href="#"><i class="bi bi-person"></i> الملف الشخصي</a>
 
                 <!-- زر تسجيل الخروج -->
                 <form action="{{ route('student.logout') }}" method="POST">
@@ -126,30 +152,44 @@
             <!-- المحتوى الرئيسي -->
             <main class="col-md-10 p-4">
                 <header>
-                    <h1>مرحبًا بك في لوحة التحكم</h1>
+                    <h1>مرحبًا بك في لوحة تحكم الطالب</h1>
                 </header>
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="card text-center">
+
+                <!-- قسم المواد المسجلة -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
                             <div class="card-body">
-                                <h5 class="card-title">عدد المستخدمين</h5>
-                                <p class="card-text display-6">123</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <h5 class="card-title">عدد الطلبات</h5>
-                                <p class="card-text display-6">456</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <h5 class="card-title">الإيرادات</h5>
-                                <p class="card-text display-6">789$</p>
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h3 class="card-title">المواد المسجلة</h3>
+                                    <button type="button" class="btn btn-register" data-bs-toggle="modal"
+                                        data-bs-target="#registerCourseModal">
+                                        <i class="bi bi-plus-circle"></i> تسجيل مادة جديدة
+                                    </button>
+                                </div>
+
+                                <!-- قائمة المواد المسجلة -->
+                                <div class="row">
+                                    @foreach (auth()->guard('student')->user()->courses as $course)
+                                        <div class="col-md-4">
+                                            <div class="course-card">
+                                                <h5>{{ $course->name }}</h5>
+                                                <p class="text-muted">الكود: {{ $course->code }}</p>
+                                                <p class="text-muted">الوحدات: {{ $course->credits }}</p>
+                                                <p>{{ Str::limit($course->description, 100) }}</p>
+                                                <form action="{{ route('teacher.courses.unenroll', $course) }}"
+                                                    method="POST" class="mt-3">
+                                                    @csrf
+                                                    <input type="hidden" name="student_id"
+                                                        value="{{ auth()->guard('student')->id() }}">
+                                                    <button type="submit" class="btn btn-danger btn-sm"
+                                                        onclick="return confirm('هل أنت متأكد من إلغاء تسجيل هذه المادة؟')">إلغاء
+                                                        التسجيل</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -158,9 +198,50 @@
         </div>
     </div>
 
-    <!-- استيراد Bootstrap JS من خلال CDN -->
+    <!-- Modal تسجيل مادة جديدة -->
+    <div class="modal fade" id="registerCourseModal" tabindex="-1" aria-labelledby="registerCourseModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="registerCourseModalLabel">تسجيل مادة جديدة</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="enrollForm" method="POST">
+                        @csrf
+                        <div class="mb-3">
+                            <label for="course" class="form-label">اختر المادة</label>
+                            <select class="form-select" id="course" name="course_id" required>
+                                <option value="">اختر المادة...</option>
+                                @foreach (\App\Models\Course::whereNotIn('id', auth()->guard('student')->user()->courses->pluck('id'))->get() as $course)
+                                    <option value="{{ $course->id }}">{{ $course->name }} ({{ $course->code }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <input type="hidden" name="student_id" value="{{ auth()->guard('student')->id() }}">
+                        <button type="submit" class="btn btn-primary w-100">تسجيل المادة</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- استيراد Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.js"></script>
+    <script>
+        document.getElementById('enrollForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const courseId = document.getElementById('course').value;
+            if (!courseId) {
+                alert('الرجاء اختيار مادة');
+                return;
+            }
+            this.action = `/teacher/courses/${courseId}/enroll`;
+            this.submit();
+        });
+    </script>
 </body>
 
 </html>
